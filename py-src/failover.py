@@ -37,11 +37,14 @@ class Failover:
 				self.t = threading.Thread(target=self.broadcaster.start)
 				self.t.deamon = True
 				self.t.start()
+				
 			if self.arp_spoof_replier:
 				pass #Todo
 		else:		
-			print "# Host is back up!"
-			self.stopSpoofing()
+			if(self.isSpoofing):
+				# Todo: broadcast for original host with original hw?
+				print "# Host is back up!"
+				self.stopSpoofing()
 		
 	
 	def start(self):

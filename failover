@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if  [[ $# < 3 ]]
+then
+	echo "Usage: failover <interface> <source ip> <target ip>"
+	echo "Example: failover eth0 192.168.1.76 192.168.1.1"
+	exit 1
+fi
+
+./failover $3
+
+cd py-src/
+
+./failover.py $1 $2 $3 
+
+cd ..

@@ -2,8 +2,7 @@
 import os, sys, subprocess
 
 '''
-	Basic executable wrapper for running our C programs.
-	
+	Basic executable wrapper for running our C programs.	
 '''
 
 class Executable(object):	
