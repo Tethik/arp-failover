@@ -1,7 +1,16 @@
 #!/bin/bash
 
-#echo $0
-echo $1
+if  [[ $# < 1 ]]
+then
+	echo "Usage: failover_init <target ip>"
+	exit 1
+fi
+
+echo "# Setting up arp-failover for host $1"
+
+echo "# Enabling promiscuous mode."
+sudo ifconfig eth0 promisc
+
 echo "# Adding alias address 13.37.13.37"
 sudo ifconfig eth0:0 13.37.13.37 netmask 255.255.255.255 up
 
