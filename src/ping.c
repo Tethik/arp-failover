@@ -122,7 +122,6 @@ int main (int argc, char **argv)
     perror ("if_nametoindex() failed to obtain interface index ");
     exit (EXIT_FAILURE);
   }
-  printf ("Index for interface %s is %i\n", interface, device.sll_ifindex);
 
   // Set destination MAC address: you need to fill these out
   // Broadcast ok for local networks. For targets outside the local network 
