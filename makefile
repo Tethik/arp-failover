@@ -1,10 +1,10 @@
 all: arp ping
 
 clean:
-	rm arp ping
+	rm bin/*
 
-arp: arp.c
-	gcc arp.c -o arp
+arp: src/arp.c
+	gcc src/arp.c -o bin/arp
 
-ping: ping.c
-	gcc ping.c -o ping
+ping: src/ping.c
+	gcc src/ping.c -o bin/ping
