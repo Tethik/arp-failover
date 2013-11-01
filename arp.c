@@ -61,13 +61,21 @@ struct _arp_hdr {
 char *allocate_strmem (int);
 uint8_t *allocate_ustrmem (int);
 
+/*
 const char* netinterfacestr = "eth0";
 const char* src_ip_str = "192.168.1.82";
 const char* dest_ip_str = "192.168.1.82";
+*/
 
-int
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
+  if(argc < 4)
+  {
+	  printf("USAGE: arp <interface> <src_ip> <dest_ip>\n");
+	  printf("Example: arp eth0 192.168.1.82 192.168.1.83\n");
+	  return EXIT_SUCCESS;
+  }
+	
   int i, status, frame_length, sd, bytes;
   char *interface, *target, *src_ip;
   arp_hdr arphdr;
@@ -76,7 +84,11 @@ main (int argc, char **argv)
   struct sockaddr_in *ipv4;
   struct sockaddr_ll device;
   struct ifreq ifr;
-
+  
+  char* netinterfacestr = argv[1];
+  char* src_ip_str = argv[2];
+  char* dest_ip_str = argv[3];
+  
   // Allocate memory for various arrays.
   src_mac = allocate_ustrmem (6);
   dst_mac = allocate_ustrmem (6);
@@ -106,22 +118,12 @@ main (int argc, char **argv)
   // Copy source MAC address.
   memcpy (src_mac, ifr.ifr_hwaddr.sa_data, 6 * sizeof (uint8_t));
 
-  // Report source MAC address to stdout.
-  printf ("MAC address for interface %s is ", interface);
-  for (i=0; i<5; i++) {
-    printf ("%02x:", src_mac[i]);
-  }
-  printf ("%02x\n", src_mac[5]);
-
-
   // Find interface index from interface name and store index in
   // struct sockaddr_ll device, which will be used as an argument of sendto().
   if ((device.sll_ifindex = if_nametoindex (interface)) == 0) {
     perror ("if_nametoindex() failed to obtain interface index ");
     exit (EXIT_FAILURE);
   }
-  printf ("Index for interface %s is %i\n", interface, device.sll_ifindex);
-
 
   // Set destination MAC address: broadcast address
   memset (dst_mac, 0xff, 6 * sizeof (uint8_t));
@@ -137,16 +139,12 @@ main (int argc, char **argv)
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = hints.ai_flags | AI_CANONNAME;
-  
-
 
   // Resolve source using getaddrinfo().
   if ((status = getaddrinfo (src_ip, NULL, &hints, &res)) != 0) {
     fprintf (stderr, "getaddrinfo() failed: %s\n", gai_strerror (status));
     exit (EXIT_FAILURE);
-  }
-  
-  
+  } 
   
   ipv4 = (struct sockaddr_in *) res->ai_addr;
   memcpy (&arphdr.sender_ip, &ipv4->sin_addr, 4 * sizeof (uint8_t));
@@ -237,13 +235,11 @@ main (int argc, char **argv)
   free (interface);
   free (target);
   free (src_ip);
-  printf("done!\n");
   return (EXIT_SUCCESS);
 }
 
 // Allocate memory for an array of chars.
-char *
-allocate_strmem (int len)
+char * allocate_strmem (int len)
 {
   void *tmp;
 
@@ -263,8 +259,7 @@ allocate_strmem (int len)
 }
 
 // Allocate memory for an array of unsigned chars.
-uint8_t *
-allocate_ustrmem (int len)
+uint8_t * allocate_ustrmem (int len)
 {
   void *tmp;
 
