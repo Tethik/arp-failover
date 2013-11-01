@@ -1,10 +1,16 @@
 #!/usr/bin/python
-import sys, time, re
+import sys, time, re, threading
 from executable import Executable
 
+'''
+	Sends an ARP Request given a source ip, source hw address and a target ip.
+	Disregards the reply. Use to spoof arp for hosts with arp snooping on.
+	If you use the same target ip and source ip, this looping program will
+	be making gratuitous arp broadcasts.
+'''
 class ArpLoop(Executable):	
 	arp_executable = "../bin/arp"
-	arp_delay = 10
+	arp_delay = 5
 	
 	def __init__(self, network_interface, src_ip, target_ip):
 		Executable.__init__(self, self.arp_executable)
@@ -20,12 +26,15 @@ class ArpLoop(Executable):
 		while not self.shouldStop:
 			self.execute(self.network_interface, self.target_ip, self.src_ip,)
 			i += 1
-			print "#"+str(i)
-			time.sleep(self.arp_delay)
+			print "#"+str(i)			
+			delay = 0
+			while delay < self.arp_delay and not self.shouldStop:
+				time.sleep(0.01)
+				delay += 0.01
 		
 	def stop(self):
 		self.shouldStop = True
-		
+				
 		
 def main(argv):	
 	if(len(argv) < 4):
@@ -41,9 +50,16 @@ def main(argv):
 		exit(1)
 	
 	try:
-		arlp.start()
+		t = threading.Thread(target=arlp.start)
+		t.deamon = True
+		t.start()
+		while True:
+			time.sleep(1000) # lets not eat up unnecessary processing..
+			pass
 	except KeyboardInterrupt:
-		print "\nLoop interuppted by user."
+		arlp.stop()
+	
+	print "\nDone."
 	
 		
 
