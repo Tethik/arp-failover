@@ -44,6 +44,7 @@
 #define ETH_HDRLEN 14  // Ethernet header length
 #define IP4_HDRLEN 20  // IPv4 header length
 #define ICMP_HDRLEN 8  // ICMP header length for echo request, excludes data
+#define SOCKET_TIMEOUT 2
 
 // Function prototypes
 uint16_t checksum (uint16_t *, int);
@@ -302,10 +303,20 @@ int main (int argc, char **argv)
     (void) gettimeofday (&t1, &tz);
 
     // Set time for the socket to timeout and give up waiting for a reply.
-    timeout = 2;
+    timeout = SOCKET_TIMEOUT;
     wait.tv_sec  = timeout;  
     wait.tv_usec = 0;
-    setsockopt (recvsd, SOL_SOCKET, SO_RCVTIMEO, (char *) &wait, sizeof (struct timeval));
+    printf("%i, %i\n", wait.tv_sec, wait.tv_usec);
+    if(setsockopt (recvsd, SOL_SOCKET, SO_RCVTIMEO, (void *) &wait, sizeof (struct timeval)) < 0)
+	{
+		perror("setsockopt() so_rcvtimeo failed ");
+		exit(EXIT_FAILURE);
+	}
+	
+	struct timeval check;
+	int* len;
+	
+
 
     // Listen for incoming ethernet frame from socket recvsd.
     // We expect an ICMP ethernet frame of the form:
@@ -315,34 +326,36 @@ int main (int argc, char **argv)
 
     // RECEIVE LOOP
     for (;;) {
-
       memset (recv_ether_frame, 0, IP_MAXPACKET * sizeof (uint8_t));
       memset (&from, 0, sizeof (from));
       fromlen = sizeof (from);
       if ((bytes = recvfrom (recvsd, recv_ether_frame, IP_MAXPACKET, 0, (struct sockaddr *) &from, &fromlen)) < 0) {
-
-        status = errno;
-
+	
+		status = errno;       
+		
         // Deal with error conditions first.
-        if (status == EAGAIN) {  // EAGAIN = 11
+        if (status == EAGAIN || status == EWOULDBLOCK || status == EINTR) {  // EAGAIN = 11
           printf ("No reply within %i seconds.\n", timeout);
           trycount++;
           break;  // Break out of Receive loop.
-        } else if (status == EINTR) {  // EINTR = 4
+        } 
+        /*else if () {  // EINTR = 4
           continue;  // Something weird happened, but let's keep listening.
-        } else {
+        } */ else {
           perror ("recvfrom() failed ");
           exit (EXIT_FAILURE);
         }
       }  // End of error handling conditionals.
+      
+      (void) gettimeofday (&t2, &tz);
+	  dt = (double) (t2.tv_sec - t1.tv_sec) * 1000.0 + (double) (t2.tv_usec - t1.tv_usec) / 1000.0;
 
       // Check for an IP ethernet frame, carrying ICMP echo reply. If not, ignore and keep listening.
       if ((((recv_ether_frame[12] << 8) + recv_ether_frame[13]) == ETH_P_IP) &&
          (recv_iphdr->ip_p == IPPROTO_ICMP) && (recv_icmphdr->icmp_type == ICMP_ECHOREPLY) && (recv_icmphdr->icmp_code == 0)) {
-
-        // Stop timer and calculate how long it took to get a reply.
-        (void) gettimeofday (&t2, &tz);
-        dt = (double) (t2.tv_sec - t1.tv_sec) * 1000.0 + (double) (t2.tv_usec - t1.tv_usec) / 1000.0;
+			 
+	    // Perhaps we need to check which ip sent the packet here. Otherwise we might get another reply which this program did not send.
+	    // todo?
 
         // Extract source IP address from received ethernet frame.
         if (inet_ntop (AF_INET, &(recv_iphdr->ip_src.s_addr), rec_ip, INET_ADDRSTRLEN) == NULL) {
@@ -356,6 +369,13 @@ int main (int argc, char **argv)
         done = 1;
         break;  // Break out of Receive loop.
       }  // End if IP ethernet frame carrying ICMP_ECHOREPLY
+      
+      if(dt / 1000 >= timeout) {
+		 printf ("No reply within %i seconds (%f).\n", timeout, dt);
+         trycount++;
+         break;
+	  }
+		
     }  // End of Receive loop.
 
     // The 'done' flag was set because an echo reply was received; break out of send loop.
@@ -392,8 +412,7 @@ int main (int argc, char **argv)
 }
 
 // Build IPv4 ICMP pseudo-header and call checksum function.
-uint16_t
-icmp4_checksum (struct icmp icmphdr, uint8_t *payload, int payloadlen)
+uint16_t icmp4_checksum (struct icmp icmphdr, uint8_t *payload, int payloadlen)
 {
   char buf[IP_MAXPACKET];
   char *ptr;
@@ -444,8 +463,7 @@ icmp4_checksum (struct icmp icmphdr, uint8_t *payload, int payloadlen)
 }
 
 // Checksum function
-uint16_t
-checksum (uint16_t *addr, int len)
+uint16_t checksum (uint16_t *addr, int len)
 {
   int nleft = len;
   int sum = 0;
@@ -469,8 +487,7 @@ checksum (uint16_t *addr, int len)
 }
 
 // Allocate memory for an array of chars.
-char *
-allocate_strmem (int len)
+char * allocate_strmem (int len)
 {
   void *tmp;
 
@@ -490,8 +507,7 @@ allocate_strmem (int len)
 }
 
 // Allocate memory for an array of unsigned chars.
-uint8_t *
-allocate_ustrmem (int len)
+uint8_t * allocate_ustrmem (int len)
 {
   void *tmp;
 
@@ -511,8 +527,7 @@ allocate_ustrmem (int len)
 }
 
 // Allocate memory for an array of ints.
-int *
-allocate_intmem (int len)
+int * allocate_intmem (int len)
 {
   void *tmp;
 

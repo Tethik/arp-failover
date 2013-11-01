@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import sys, os, subprocess, time
+import sys, time, re
 from observable import Observable
 from executable import Executable
 
@@ -20,8 +20,16 @@ class PingLoop(Observable, Executable):
 		print "# Starting loop."
 		while True:
 			result = self.execute(self.network_interface, self.src_ip, self.target_ip)
-			print result
-			self.fire(time=500, up=True)
+			# print result
+			m = re.search("[0-9]+\.[0-9]+ ms", result)
+			if(m):
+				ms = float(m.group(0).split(" ")[0])
+				up = True
+			else:
+				ms = None
+				up = False			
+			
+			self.fire(time=ms, up=up)
 			time.sleep(self.ping_delay)	
 			
 
