@@ -52,9 +52,16 @@ char *allocate_strmem (int);
 uint8_t *allocate_ustrmem (int);
 int *allocate_intmem (int);
 
-int
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
+  if(argc < 4)
+  {
+	  printf("USAGE: ping <interface> <src_ip> <target>\n");
+	  printf("Example: ping eth0 192.168.1.82 192.168.1.83\n");
+	  //printf("Example 2: ping eth0 192.168.1.82 www.google.com\n");
+	  return EXIT_SUCCESS;
+  }
+	
   int i, status, datalen, frame_length, sendsd, recvsd, bytes, *ip_flags, timeout, trycount, trylim, done;
   char *interface, *target, *src_ip, *dst_ip, *rec_ip;
   struct ip send_iphdr, *recv_iphdr;
@@ -70,6 +77,10 @@ main (int argc, char **argv)
   struct timezone tz;
   double dt;
   void *tmp;
+  
+  char* netinterfacestr = argv[1];
+  char* src_ip_str = argv[2];
+  char* target_str = argv[3];
 
   // Allocate memory for various arrays.
   src_mac = allocate_ustrmem (6);
@@ -85,7 +96,7 @@ main (int argc, char **argv)
   ip_flags = allocate_intmem (4);
 
   // Interface to send packet through.
-  strcpy (interface, "eth0");
+  strcpy (interface, netinterfacestr);
 
   // Submit request for a socket descriptor to look up interface.
   // We'll use it to send packets as well, so we leave it open.
@@ -105,13 +116,6 @@ main (int argc, char **argv)
   // Copy source MAC address.
   memcpy (src_mac, ifr.ifr_hwaddr.sa_data, 6);
 
-  // Report source MAC address to stdout.
-  printf ("MAC address for interface %s is ", interface);
-  for (i=0; i<5; i++) {
-    printf ("%02x:", src_mac[i]);
-  }
-  printf ("%02x\n", src_mac[5]);
-
   // Find interface index from interface name and store index in
   // struct sockaddr_ll device, which will be used as an argument of sendto().
   if ((device.sll_ifindex = if_nametoindex (interface)) == 0) {
@@ -121,6 +125,8 @@ main (int argc, char **argv)
   printf ("Index for interface %s is %i\n", interface, device.sll_ifindex);
 
   // Set destination MAC address: you need to fill these out
+  // Broadcast ok for local networks. For targets outside the local network 
+  // you will need the mac address of the router.
   dst_mac[0] = 0xff;
   dst_mac[1] = 0xff;
   dst_mac[2] = 0xff;
@@ -129,10 +135,10 @@ main (int argc, char **argv)
   dst_mac[5] = 0xff;
 
   // Source IPv4 address: you need to fill this out
-  strcpy (src_ip, "192.168.1.132");
+  strcpy (src_ip, src_ip_str);
 
   // Destination URL or IPv4 address: you need to fill this out
-  strcpy (target, "www.google.com");
+  strcpy (target, target_str);
 
   // Fill out hints for getaddrinfo().
   memset (&hints, 0, sizeof (struct addrinfo));

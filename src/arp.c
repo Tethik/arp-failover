@@ -1,3 +1,6 @@
+/*
+	Modifications by Joakim Uddholm
+*/
 /*  Copyright (C) 2011-2013  P.D. Buchan (pdbuchan@yahoo.com)
 
     This program is free software: you can redistribute it and/or modify
