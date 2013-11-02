@@ -76,9 +76,13 @@ int main (int argc, char **argv)
   {
 	  printf("USAGE: arp <interface> <src_ip> <dest_ip>\n");
 	  printf("Example: arp eth0 192.168.1.82 192.168.1.83\n");
+	  
+	  printf("USAGE: arp <interface> <src_ip> <dest_ip> <MAC-Address>\n");
+	  printf("Example: arp eth0 192.168.1.82 192.168.1.83 00:00:00:00:00:00\n");
+	  
 	  return EXIT_SUCCESS;
   }
-	
+  
   int i, status, frame_length, sd, bytes;
   char *interface, *target, *src_ip;
   arp_hdr arphdr;
@@ -91,6 +95,15 @@ int main (int argc, char **argv)
   char* netinterfacestr = argv[1];
   char* src_ip_str = argv[2];
   char* dest_ip_str = argv[3];
+  
+  char hasOverridenMAC = 0;
+  char* spoof_mac;
+  if(argc > 4)
+  {
+	spoof_mac = argv[4];
+	hasOverridenMAC = 1;
+  }
+  
   
   // Allocate memory for various arrays.
   src_mac = allocate_ustrmem (6);
@@ -118,8 +131,31 @@ int main (int argc, char **argv)
   }
   close (sd);
 
-  // Copy source MAC address.
-  memcpy (src_mac, ifr.ifr_hwaddr.sa_data, 6 * sizeof (uint8_t));
+  if(hasOverridenMAC == 0)
+  {
+    // Copy source MAC address.
+    memcpy (src_mac, ifr.ifr_hwaddr.sa_data, 6 * sizeof (uint8_t));
+  }
+  else
+  {
+	  
+	// Set the source MAC address as the input we received
+    int j = 0;
+	int k;
+	char tmp[3] = { 0 };
+	for(k = 0; spoof_mac[k] != 0; k++)
+	{
+	  if(spoof_mac[k] != ':' && spoof_mac[k] != '-')
+	  {
+	    memcpy(tmp, spoof_mac + k, 2);
+	    src_mac[j] = (unsigned char)strtol(tmp, NULL, 16);
+	    k++;
+	    j++;
+	  }
+    } 
+  }  
+  
+  
 
   // Find interface index from interface name and store index in
   // struct sockaddr_ll device, which will be used as an argument of sendto().
