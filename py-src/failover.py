@@ -1,6 +1,7 @@
 #!/usr/bin/python
 from pingloop import PingLoop
 from arploop import ArpLoop
+from arpwithmacaddress import ArpWithMacAddress
 import sys, threading
 
 '''
@@ -14,9 +15,10 @@ class Failover:
 	# Todo
 	arp_spoof_replier = False
 	
-	def __init__(self, network_interface, src_ip, target_ip):
+	def __init__(self, network_interface, src_ip, target_ip, target_MAC):
 		self.monitor = PingLoop(network_interface, src_ip, target_ip)
 		self.broadcaster = ArpLoop(network_interface, target_ip, target_ip)	
+		self.arpResetter = ArpWithMacAddress(network_interface, target_ip, target_ip, target_MAC)	
 		self.isSpoofing = False
 	
 	'''
@@ -59,23 +61,28 @@ class Failover:
 		if self.isSpoofing:
 			print "# Stopping spoof"
 			self.broadcaster.stop()
+			self.arpResetter.execute()
 			self.t.join()
 			self.isSpoofing = False
 		
 		
 def main(argv):	
-	if(len(argv) < 4):
+	if(len(argv) < 5):
 		print """
-USAGE: failover.py <interface> <src_ip> <target_ip>
-Example: failover.py eth0 192.168.1.80 192.168.1.1
+USAGE: failover.py <interface> <src_ip> <target_ip> <MAC-address>
+Example: failover.py eth0 192.168.1.80 192.168.1.1 C2:34:0F:20:04:CC
 
 ARP Failover program. Monitors a given host ip and once it detects
 the host being down it will automatically attempt to temporarily 
 take over the traffic for that host using ARP spoofing.
+
+When host gets back online it will send out a gratitious ARP request to
+reset the ARP cache to the original state.
+
 			"""
 		exit()
 	
-	failover = Failover(argv[1],argv[2],argv[3])
+	failover = Failover(argv[1],argv[2],argv[3], argv[4])
 	try:
 		failover.start()
 	except KeyboardInterrupt:
