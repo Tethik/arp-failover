@@ -3,14 +3,14 @@
 if  [[ $# < 3 ]]
 then
 	echo "Usage: failover <interface> <source ip> <target ip>"
-	echo "Example: failover eth0 192.168.1.76 192.168.1.1"
+	echo "Example: failover eth0 192.168.1.76 192.168.1.202"
 	exit 1
 fi
 
-./failover $3
+./failover_init $1 $3
 
 cd py-src/
 
-./failover.py $1 $2 $3 
+./failover.py $1 $2 $3
 
 cd ..
