@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if  [[ $# < 3 ]]
+if  [[ $# < 4 ]]
 then
 	echo "Usage: failover <interface> <source ip> <target ip>"
 	echo "Example: failover eth0 192.168.1.76 192.168.1.202"
@@ -11,6 +11,6 @@ fi
 
 cd py-src/
 
-./failover.py $1 $2 $3
+./failover.py $1 $2 $3 $4
 
 cd ..
