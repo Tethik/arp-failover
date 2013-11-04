@@ -6,7 +6,7 @@ from executable import Executable
 class PingLoop(Observable, Executable):
 	# Assuming that the C program is located in the relative directory
 	ping_executable = "../bin/ping"
-	ping_delay = 10
+	ping_delay = 3
 	
 	def __init__(self, network_interface, src_ip, target_ip):
 		Observable.__init__(self)
