@@ -2,8 +2,8 @@
 
 if  [[ $# < 4 ]]
 then
-	echo "Usage: failover <interface> <source ip> <target ip>"
-	echo "Example: failover eth0 192.168.1.76 192.168.1.202"
+	echo "Usage: failover <interface> <source ip> <target ip> <target hw>"
+	echo "Example: failover eth0 192.168.1.76 192.168.1.202 b8:27:eb:b1:76:df"
 	exit 1
 fi
 
